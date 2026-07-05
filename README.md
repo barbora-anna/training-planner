@@ -36,7 +36,8 @@ if it ever expires, the agent stops and asks you to re-run `./train`.
 3. **`generate-plan`** — target + fitness → periodized `block.json` / `block.md`
 4. **review & edit** the plan files
 5. **`sync-garmin`** — push run workouts to Garmin Connect (explicit; review before confirming)
-6. **`adjust-plan`** — regenerate / make harder / shorten the block → re-sync
+6. **`review-progress`** — adherence vs Strava actuals + trend reflection (the advisor also does this at the start of each session)
+7. **`adjust-plan`** — regenerate / make harder / shorten the block → re-sync
 
 No goal yet? The advisor can also plan a **single run** tailored to your current fitness,
 without a campaign.
