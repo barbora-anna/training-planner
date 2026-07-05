@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "mcp__strava-mcp__*",
-      "Bash(uv run python ../scripts/*)",
+      "Bash(uv run plan:*)",
+      "Bash(uv run workouts:*)",
       "Read",
       "Edit",
       "Write"
