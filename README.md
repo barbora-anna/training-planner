@@ -50,7 +50,7 @@ CLAUDE.md                 Coding Agent instructions (repo root)
 
 agent/                    the Fitness Advisor — run Claude here
   CLAUDE.md                 advisor persona (discuss & plan; never writes code)
-  .claude/skills/           assess-fitness · set-target · generate-plan · adjust-plan · sync-garmin
+  .claude/skills/           assess-fitness · set-target · generate-plan · review-progress · adjust-plan · sync-garmin
   athlete/                  your state: profile.json, fitness-snapshots/, health-status.json  (gitignored)
   campaigns/<slug>/         per-goal plans: target.json, block.json, block.md                (gitignored)
 
@@ -84,4 +84,14 @@ Data flows in one direction: **`models` (contracts) → `storage` (persistence) 
   `GARMIN_EMAIL` in `.env` (gitignored) to prefill the prompt; see `.env.example`.
 
 - **Strava** is read live via the Strava MCP — no setup beyond having the MCP connected.
+
+## Tests
+
+The package logic — models, translation, storage, the Garmin library, and auth — is covered
+by a fast, fully **offline** test suite (no network, no Garmin/Strava calls):
+
 ```
+uv run pytest
+```
+
+Tests live in `tests/`; `pytest` is a dev dependency, installed by `uv sync`.
