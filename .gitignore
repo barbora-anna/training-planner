@@ -1,0 +1,26 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Garmin auth tokens cached by garth/garminconnect
+.garminconnect/
+~/.garminconnect/
+
+# Personal training data — keep local, don't publish (a README per dir stays tracked).
+# Uses /* (one level) so a top-level README in each dir is re-includable.
+agent/athlete/*
+!agent/athlete/README.md
+agent/campaigns/*
+!agent/campaigns/README.md
+
+# Claude Code local (user-specific) settings — not shared
+.claude/settings.local.json
+agent/.claude/settings.local.json
+
+# IDE
+.idea/
+/arch_docs/

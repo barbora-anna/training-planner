@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__strava-mcp__*",
+      "Bash(uv run python ../scripts/*)",
+      "Read",
+      "Edit",
+      "Write"
+    ]
+  }
+}

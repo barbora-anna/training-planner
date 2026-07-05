@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#
+# Launch the Fitness Advisor (Claude, run from agent/).
+#
+# Auth boundary: you sign in HERE, at your own terminal, `garmin-login` resumes an
+# existing token or prompts you to log in; it's a no-op if you're already signed in.
+# If the token expires mid-session, the agent stops and asks you to re-run this launcher.
+#
+#   ./train            # start the advisor
+#   ./train --resume   # any args are passed straight through to `claude`
+#
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+uv run garmin-login
+
+cd agent && exec claude "$@"
