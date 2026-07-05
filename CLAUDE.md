@@ -35,14 +35,29 @@ commit. **The user owns all commits and remote interactions** (this repo publish
 own GitHub). Read-only inspection is fine and encouraged (`status`, `diff`, `log`, `show`) —
 but when work is ready to be committed, summarize what changed and let the user commit it.
 
+## Document the architecture in `arch_docs/`
+
+`arch_docs/` is the home for **all architecture thinking** — decisions, ideas, design changes,
+and notable implementations. It's a local planning store.
+
+- Each erchitectural decision must be **recorded in `arch_docs/`** — capture the
+  *why*, not just the *what*.
+- **Keep it truthful.** When reality changes, update the doc — a stale arch
+  doc is worse than none. Mark ideas **built** when they ship; move them out of "deferred"
+  once they're not.
+- Ideas are welcome before they're built — that's the point of the store. Label them clearly
+  as *proposed* vs *built*.
+
 ## Project map (details in README.md)
 
 - `agent/athlete/` + `agent/campaigns/` — **source of truth**: fitness state and per-target
   plans (`*.json` = machine contract, `*.md` = human review). This is the product.
 - `agent/CLAUDE.md` — the Fitness Advisor persona.
 - `agent/.claude/skills/` — the workflow skills the Advisor uses (`assess-fitness`,
-  `set-target`, `generate-plan`, `adjust-plan`, `sync-garmin`). They live under `agent/` so
-  they load when Claude is launched there (subdir launches don't reliably see a parent `.claude/`).
+  `set-target`, `generate-plan`, `review-progress`, `adjust-plan`, `sync-garmin`). They live
+  under `agent/` so they load when Claude is launched there (subdir launches don't reliably
+  see a parent `.claude/`).
+- `arch_docs/` — architecture decisions, ideas, and design notes (local planning; gitignored).
 - `src/training_planner/` — the `training-planner` package: models, storage, Garmin sync,
   and CLIs (exposed as `uv run plan | workouts | garmin-login`).
 - `.claude/settings.json` — coder permissions; `agent/.claude/settings.json` — advisor
@@ -53,5 +68,6 @@ but when work is ready to be committed, summarize what changed and let the user 
 ## Conventions
 
 - Keep the `agent/` data schemas stable (they map to `src/training_planner/` models) — downstream skills read them.
-- `python-garminconnect` is unofficial — always `--dry-run` a workout before uploading.
+- `python-garminconnect` is unofficial — always dry-run (inspect the translated `.to_dict()`)
+  before uploading a workout.
 - Never commit secrets; `.env` is gitignored.
