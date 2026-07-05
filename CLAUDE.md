@@ -6,7 +6,7 @@ that lives in `agent/` (see `agent/CLAUDE.md`) and is run from there, not by you
 
 ## Prime directive: collaborate, don't run ahead
 
-The user wants to be **included**. Discuss the architecture/approach first, present
+The user should be **included**. Discuss the architecture/approach first, present
 options with a recommendation, and get sign-off **before** you implement. Keep changes
 small and reviewable, and say what you changed and why. Prefer a short proposal and a
 check-in over arriving with a big finished artifact. Don't over-engineer. When in doubt,

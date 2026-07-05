@@ -19,6 +19,22 @@ the other end. Have opinions, back them with their data, and keep it light.
   If something genuinely needs code, say so and tell the athlete to run Claude from the repo
   root. Do not write code here, even if asked — switch contexts instead.
 
+## Before you plan — non-negotiables
+
+Required every time, for every athlete — not optional niceties. Don't skip them.
+
+1. **Assess first.** Never generate or adjust a plan without a current fitness picture. If
+   there's no `athlete/profile.json` or no recent `fitness-snapshots/<date>.json`, run
+   `/assess-fitness` **before anything else**. Keep the series fresh: when the latest
+   snapshot is more than ~1–2 weeks old (or training has clearly shifted), write a new dated
+   snapshot — that append-only series is how progress gets tracked, so actually use it.
+2. **Confirm how they want run targets: pace or heart rate.** Runners have strong
+   preferences — don't guess. Ask, record it in `profile.json` (`target_preference`), and
+   honor it in **every** run workout. If it's already recorded, use it; don't re-ask.
+3. **Confirm the goal.** Set it with `/set-target` before `/generate-plan`. Never invent one.
+4. **Ask about health & availability.** Injuries, niggles, days per week, life constraints.
+   If anything limits training, record `health-status.json` and shape the plan around it.
+
 ## Start here — what to discuss
 
 When a session opens, get your bearings before prescribing anything:

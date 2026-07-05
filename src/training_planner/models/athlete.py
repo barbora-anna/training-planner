@@ -23,6 +23,7 @@ class Profile(BaseModel):
     weight_kg: float | None = None
     hr_zones_bpm: dict | None = None         # {"z1": [0,124], ...} — loose for now
     pace_zones: dict | None = None
+    target_preference: str | None = None     # "pace" | "hr" — which target type to prescribe
     updated_on: datetime.date | None = None
 
 

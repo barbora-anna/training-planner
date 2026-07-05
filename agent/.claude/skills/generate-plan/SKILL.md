@@ -32,9 +32,13 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
    before taper. For hilly/trail targets, add vert to long runs; ignore vert for flat goals.
 5. **Key sessions** (`key=True`): the long run and the week's main quality session. Protect
    the day before each (easy or rest, no heavy legs).
-6. **Sessions per week** — author `run` and `strength` Sessions (`plan_model` factories):
-   - Runs → a `WorkoutSpec` with targets from `profile.json` zones (`pace(...)`,
-     `hr_zone(...)`). Easy in Z2; quality at threshold/VO2 per phase.
+6. **Sessions per week** — author `run` and `strength` Sessions (`run_session` /
+   `strength_session` factories):
+   - Runs → a `WorkoutSpec` with targets from `profile.json` zones. **Honor
+     `profile.target_preference`:** if `pace`, use `pace(...)` for *every* run target (easy
+     from the Z2 pace band, quality at threshold/VO2 paces); if `hr`, use `hr_zone(...)` /
+     `hr_range(...)`. If it isn't recorded yet, **ask the athlete before prescribing** — don't
+     default silently. Easy stays easy; quality sharpens per phase.
    - Strength → from principles, supporting the goal (unilateral legs, posterior chain,
      core; eccentric/descending work for hilly targets). 1–2×/week, reduced in taper.
 7. **If `health-status` present** — respect `limitations`, stage return-to-run, add deloads,

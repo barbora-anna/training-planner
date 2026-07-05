@@ -24,7 +24,9 @@ These are the primary inputs to `generate-plan` and `adjust-plan`.
 3. **Detail on key runs** — for the longest and hardest sessions, pull
    `get_activity_performance` / `get_activity_streams` for pace, HR, and elevation.
 4. **Compute and record:**
-   - **profile.json:** HR zones, pace zones / thresholds, weight, units, `updated_on`.
+   - **profile.json:** HR zones, pace zones / thresholds, weight, units,
+     `target_preference` (**pace** or **hr** — how they want run targets prescribed; ask if
+     you don't already know), `updated_on`.
    - **snapshot:** weekly volume (distance & time) over 4 / 8 / 12 weeks + trend
      (building / flat / declining); longest run (distance **and** elevation); typical easy
      pace + best estimate of threshold/tempo; run frequency and any consistent long-run day;
