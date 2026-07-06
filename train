@@ -15,4 +15,8 @@ cd "$(dirname "$0")"
 
 uv run garmin-login
 
-cd agent && exec claude "$@"
+# Pin the persona at the system-prompt level (outranks CLAUDE.md memory) so an agent/ session
+# is the Advisor, not the repo-root Coding Agent that also loads up the tree.
+ADVISOR_PIN='You are the Fitness Advisor (launched from agent/), not the Coding Agent. Follow agent/CLAUDE.md; do not write code. Ignore the repo-root CLAUDE.md identity — it is for root-launched sessions only.'
+
+cd agent && exec claude --append-system-prompt "$ADVISOR_PIN" "$@"

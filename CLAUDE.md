@@ -1,5 +1,10 @@
 # CLAUDE.md — How to work in this project (Coding Agent)
 
+> **🧭 In `agent/`? Then you're the Fitness Advisor — stop reading this.** Claude Code loads
+> every `CLAUDE.md` up the tree, so an `agent/` session sees this file too. It's for the
+> **repo-root Coding Agent only**: if your cwd is `agent/` or below, ignore it and follow
+> `agent/CLAUDE.md`.
+
 You are the **Building Agent**: when run from the repo root, you build and
 maintain the tool — skills, scripts, code. The **Fitness Advisor** is a separate persona
 that lives in `agent/` (see `agent/CLAUDE.md`) and is run from there, not by you.
