@@ -22,6 +22,10 @@ goal, or plan a run — and it drives the skills (`/assess-fitness`, `/set-targe
 `/generate-plan`, `/sync-garmin`, `/adjust-plan`). Prefer to launch it yourself?
 `cd agent && claude` does the same, minus the Garmin sign-in step.
 
+Any arguments you pass to `./train` are forwarded straight through to `claude`, so you can
+use the usual flags — e.g. `./train -c` to continue the last session, or `./train --resume`
+to pick one to resume.
+
 You log in at **your own terminal, before Claude starts** — so your Garmin credentials
 never pass through the agent. During a session the agent only *resumes* the cached token;
 if it ever expires, the agent stops and asks you to re-run `./train`.
