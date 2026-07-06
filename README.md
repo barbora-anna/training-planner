@@ -1,4 +1,4 @@
-# Workout Planner
+# Training Planner
 
 An agent-driven running training planner that runs **inside Claude Code**.
 
