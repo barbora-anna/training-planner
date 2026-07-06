@@ -2,18 +2,19 @@
 #
 # Launch the Fitness Advisor (Claude, run from agent/).
 #
-# Auth boundary: you sign in HERE, at your own terminal, `garmin-login` resumes an
-# existing token or prompts you to log in; it's a no-op if you're already signed in.
-# If the token expires mid-session, the agent stops and asks you to re-run this launcher.
+# Garmin is optional (watch sync only). Analysis and planning run on Strava alone, so this
+# resumes a cached Garmin session if one exists but NEVER blocks: a user without Garmin
+# starts straight into the advisor. To enable watch sync, run `uv run garmin-login` once
+# yourself — you sign in at your OWN terminal, so credentials never pass through the agent.
 #
-#   ./train            # start the advisor
+#   ./train            # start the advisor (Garmin optional)
 #   ./train --resume   # any args are passed straight through to `claude`
 #
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
-uv run garmin-login
+uv run garmin-login --resume-only || true   # refresh if signed in; never block if not
 
 # Pin the persona at the system-prompt level (outranks CLAUDE.md memory) so an agent/ session
 # is the Advisor, not the repo-root Coding Agent that also loads up the tree.

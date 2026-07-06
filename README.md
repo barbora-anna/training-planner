@@ -4,8 +4,8 @@ An agent-driven running training planner that runs **inside Claude Code**.
 
 - **Live data** — Claude reads your training history directly via the Strava MCP.
 - **Plans live in `agent/campaigns/<slug>/`** (`block.json` machine contract + `block.md` for review); athlete state lives in `agent/athlete/`. Edit by hand anytime. Your personal data is gitignored.
-- **Garmin sync** — the `training-planner` package (`src/training_planner/`) pushes structured workouts to Garmin Connect and schedules them, via the unofficial [`python-garminconnect`](https://github.com/cyberjunky/python-garminconnect) library.
-- **Skills** in `agent/.claude/skills/` drive each step. Run `./train` to start the **Fitness Advisor** (it signs you into Garmin first, then launches Claude in `agent/`); run Claude from the repo root for the **Coding Agent** that builds the tool.
+- **Garmin sync (optional)** — if you have a Garmin watch, the `training-planner` package (`src/training_planner/`) pushes structured workouts to Garmin Connect and schedules them, via the unofficial [`python-garminconnect`](https://github.com/cyberjunky/python-garminconnect) library. No watch? Assessment and planning work fine on Strava alone — the plan in `block.md` is the deliverable.
+- **Skills** in `agent/.claude/skills/` drive each step. Run `./train` to start the **Fitness Advisor** (it resumes a Garmin session if you have one, then launches Claude in `agent/`); run Claude from the repo root for the **Coding Agent** that builds the tool.
 
 ## Running
 
@@ -16,11 +16,11 @@ and deps synced (`uv sync`, see [Setup](#setup)). Then, from the repo root:
 ./train
 ```
 
-This signs you into Garmin if needed, then launches Claude Code inside `agent/` as the
-**Fitness Advisor**. From there just talk to it — ask it to assess your fitness, set a
-goal, or plan a run — and it drives the skills (`/assess-fitness`, `/set-target`,
-`/generate-plan`, `/sync-garmin`, `/adjust-plan`). Prefer to launch it yourself?
-`cd agent && claude` does the same, minus the Garmin sign-in step.
+This resumes a Garmin session if you have one (never blocks if you don't), then launches
+Claude Code inside `agent/` as the **Fitness Advisor**. From there just talk to it — ask it
+to assess your fitness, set a goal, or plan a run — and it drives the skills
+(`/assess-fitness`, `/set-target`, `/generate-plan`, `/sync-garmin`, `/adjust-plan`). Prefer
+to launch it yourself? `cd agent && claude` does the same.
 
 Any arguments you pass to `./train` are forwarded straight through to `claude`, so you can
 use the usual flags — e.g. `./train -c` to continue the last session, or `./train --resume`
@@ -76,7 +76,9 @@ Data flows in one direction: **`models` (contracts) → `storage` (persistence) 
   uv sync          # installs garminconnect[workout] + python-dotenv
   ```
 
-- **Garmin auth — password-free.** `./train` signs you in when needed; to do it manually:
+- **Garmin auth — optional, password-free.** Only needed to sync workouts to a watch;
+  assessment and planning don't use it. `./train` resumes a cached session but never blocks.
+  To enable watch sync, sign in once:
 
   ```
   uv run garmin-login

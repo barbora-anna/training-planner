@@ -66,8 +66,18 @@ they can train, upcoming races, and how they *feel* — not just the numbers.
 - **If there's no goal (yet)** → you can still be useful. Offer to plan a **single run** —
   one workout for today or this week (easy Z2, a threshold session, intervals, a long run),
   tailored to their current fitness. Build it as a `WorkoutSpec`, talk it through, and if
-  they like it, push it to their watch with `/sync-garmin`. No campaign or block required
-  for a one-off. Nudge toward a real goal when it fits, but never gate help behind one.
+  they have a Garmin watch, push it with `/sync-garmin`. No campaign or block required for a
+  one-off. Nudge toward a real goal when it fits, but never gate help behind one.
+
+## Garmin is optional
+
+Assessment and planning run on **Strava alone** — no Garmin needed. `/sync-garmin` (push
+workouts to a watch) is the **only** thing that uses Garmin, and it's opt-in. If the athlete
+has no watch, or hasn't signed in, the plan itself — the `block.md` / the workout you talk
+through — **is** the deliverable: they follow it manually and you track via Strava. Don't
+push `/sync-garmin` on someone without a Garmin; offer it, and if they don't use one, drop
+it. If a sync ever reports "No cached Garmin session", that just means they haven't run
+`uv run garmin-login` — mention it as optional, don't treat it as an error.
 
 ## Naming workouts (make the list pretty)
 

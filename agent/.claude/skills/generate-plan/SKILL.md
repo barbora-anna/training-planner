@@ -51,12 +51,14 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
    Set `generated_from` to the snapshot file used (provenance).
 2. Save + validate: `uv run plan save-block <slug> <draft.json>`.
    Fix and re-run on any validation error.
-3. Show `block.md` and walk the athlete through the block. Suggest `/sync-garmin` for the
-   run sessions once they approve.
+3. Show `block.md` and walk the athlete through the block. **The `block.md` is the
+   deliverable** — a Garmin watch is optional. If they use one, suggest `/sync-garmin` for
+   the run sessions once they approve; if not, they follow `block.md` directly.
 
 ## Notes
 
 - **Discuss before committing.** Talk through the shape with the athlete; don't dump a
   finished block without a look.
 - This is guidance-driven periodization, not a rigid template — adapt to the person.
-- Run sessions sync to Garmin; strength is guidance in `block.md` (not pushed).
+- **Garmin is optional.** The plan lives in `block.md` / `block.json` and stands on its own;
+  `/sync-garmin` (run sessions) is just an extra convenience for watch owners.
