@@ -56,14 +56,29 @@ class WorkoutLibrary:
         return next(self._iter_by_name(name), None)
 
     # --- writes ---------------------------------------------------------------
+    #
+    # A workout is either a typed `RunningWorkout` (running) or a plain dict (strength —
+    # there is no library StrengthWorkout class, so `strength_spec_to_garmin` yields a
+    # dict for the generic `upload_workout`). These helpers accept either; the running
+    # path is unchanged.
 
-    def create(self, workout: RunningWorkout) -> dict:
+    @staticmethod
+    def _name(workout: RunningWorkout | dict) -> str:
+        return workout["workoutName"] if isinstance(workout, dict) else workout.workoutName
+
+    @staticmethod
+    def _payload(workout: RunningWorkout | dict) -> dict:
+        return dict(workout) if isinstance(workout, dict) else workout.to_dict()
+
+    def create(self, workout: RunningWorkout | dict) -> dict:
+        if isinstance(workout, dict):
+            return self.client.upload_workout(workout)     # generic (strength)
         return self.client.upload_running_workout(workout)
 
-    def update(self, workout_id: int | str, workout: RunningWorkout):
+    def update(self, workout_id: int | str, workout: RunningWorkout | dict):
         """Update a workout in place via PUT — preserves its ID and any scheduling."""
         workout_id = int(workout_id)
-        payload = workout.to_dict()
+        payload = self._payload(workout)
         payload["workoutId"] = workout_id
         url = f"{self.client.garmin_workouts}/workout/{workout_id}"
         return self.client.client.put("connectapi", url, json=payload, api=True)
@@ -83,8 +98,10 @@ class WorkoutLibrary:
 
     # --- compound -------------------------------------------------------------
 
-    def upsert(self, workout: RunningWorkout, *, strategy: str = "update") -> dict:
+    def upsert(self, workout: RunningWorkout | dict, *, strategy: str = "update") -> dict:
         """Create the workout, or reconcile an existing one with the same name.
+
+        Accepts a typed running workout or a strength dict.
 
         - strategy="update"  (default): in-place PUT — preserves workoutId + schedule.
         - strategy="replace": delete the old one and create fresh — new workoutId.
@@ -94,7 +111,7 @@ class WorkoutLibrary:
         if strategy not in ("update", "replace"):
             raise ValueError(f"strategy must be 'update' or 'replace', got {strategy!r}")
 
-        if not (existing := self.find_by_name(workout.workoutName)):
+        if not (existing := self.find_by_name(self._name(workout))):
             result = self.create(workout)
             return {"action": "created", "workoutId": result.get("workoutId")}
 

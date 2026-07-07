@@ -28,10 +28,13 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, model_validator
 
+from .exercises import Exercise
+
 __all__ = [
     "PaceTarget", "HRZoneTarget", "HRRangeTarget",
     "pace", "hr_zone", "hr_range",
     "Step", "Repeat", "WorkoutSpec",
+    "StrengthStep", "RestStep", "StrengthSet", "StrengthWorkoutSpec",
 ]
 
 # --------------------------------------------------------------------------- #
@@ -184,6 +187,89 @@ class WorkoutSpec(BaseModel):
     def preview(self) -> str:
         """A readable rendering for review before syncing."""
         lines = [f"{self.name}  ({self.sport})"]
+        for i, el in enumerate(self.steps, 1):
+            lines.append(f"  {i}. {el}")
+        return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# Strength — a parallel spec (running steps/targets don't apply to lifting)
+#
+# An exercise ends on reps OR a time hold (seconds); optional weight (kg, None =
+# bodyweight). Sets are a `StrengthSet` repeat group — the strength counterpart to
+# `Repeat`, typed to strength steps rather than running `Step`.
+# --------------------------------------------------------------------------- #
+
+class StrengthStep(BaseModel):
+    """One exercise, ending on reps OR a timed hold (seconds) — exactly one."""
+    exercise: Exercise
+    reps: int | None = Field(default=None, gt=0)
+    seconds: float | None = Field(default=None, gt=0)      # timed holds (planks, carries)
+    weight_kg: float | None = Field(default=None, gt=0)    # None = bodyweight
+
+    def __init__(self, exercise: Exercise | None = None, /, **data):
+        # Allow positional exercise: StrengthStep(Exercise("SQUAT"), reps=10)
+        if exercise is not None:
+            data["exercise"] = exercise
+        super().__init__(**data)
+
+    @model_validator(mode="after")
+    def _exactly_one_effort(self) -> "StrengthStep":
+        if (self.reps is None) == (self.seconds is None):
+            raise ValueError(f"strength step '{self.exercise}': set exactly one of "
+                             "reps= or seconds=")
+        return self
+
+    def __str__(self) -> str:
+        effort = f"{self.reps} reps" if self.reps is not None else f"{self.seconds:g}s hold"
+        load = f" @ {self.weight_kg:g} kg" if self.weight_kg is not None else ""
+        return f"{self.exercise} — {effort}{load}"
+
+
+class RestStep(BaseModel):
+    """A rest between sets/exercises, in seconds."""
+    seconds: float = Field(gt=0)
+
+    def __init__(self, seconds: float | None = None, /, **data):
+        if seconds is not None:
+            data["seconds"] = seconds
+        super().__init__(**data)
+
+    def __str__(self) -> str:
+        return f"rest {self.seconds:g}s"
+
+
+class StrengthSet(BaseModel):
+    """A repeat group of strength/rest steps — e.g. 3× (squat + rest)."""
+    times: int = Field(ge=2)
+    steps: list[StrengthStep | RestStep] = Field(min_length=1)
+
+    def __init__(self, times: int | None = None,
+                 steps: list[StrengthStep | RestStep] | None = None, /, **data):
+        if times is not None:
+            data["times"] = times
+        if steps is not None:
+            data["steps"] = steps
+        super().__init__(**data)
+
+    def __str__(self) -> str:
+        inner = " + ".join(str(s) for s in self.steps)
+        return f"{self.times}x ({inner})"
+
+
+StrengthElement = Union[StrengthStep, RestStep, StrengthSet]
+
+
+class StrengthWorkoutSpec(BaseModel):
+    """A complete, validated strength workout description."""
+    name: str = Field(min_length=1)
+    sport: Literal["strength"] = "strength"
+    description: str | None = None
+    steps: list[StrengthElement] = Field(min_length=1)
+
+    def preview(self) -> str:
+        """A readable rendering for review before syncing."""
+        lines = [f"{self.name}  (strength)"]
         for i, el in enumerate(self.steps, 1):
             lines.append(f"  {i}. {el}")
         return "\n".join(lines)

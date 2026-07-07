@@ -15,8 +15,8 @@ import datetime
 import shutil
 from pathlib import Path
 
-from .models.plan import Block, Target
 from .models.athlete import FitnessSnapshot, HealthStatus, Profile
+from .models.plan import Block, Target
 
 # src/training_planner/ -> repo root -> agent/
 _AGENT = Path(__file__).resolve().parents[2] / "agent"

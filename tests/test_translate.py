@@ -1,7 +1,7 @@
 """spec_to_garmin — the pure translation layer: step ordering, target encoding, duration."""
 
 from training_planner.garmin.translate import (
-    _estimate_seconds,
+    _estimate,
     _step_seconds,
     spec_to_garmin,
 )
@@ -78,7 +78,7 @@ class TestDurationEstimate:
             Step("warmup", minutes=10),
             Repeat(2, [Step("interval", minutes=4), Step("recovery", minutes=1)]),
         ]
-        assert _estimate_seconds(elems) == 600 + 2 * (240 + 60)
+        assert _estimate(elems, Repeat, _step_seconds) == 600 + 2 * (240 + 60)
 
     def test_estimated_duration_present_in_payload(self):
         d = spec_to_garmin(WorkoutSpec(name="t", steps=[Step("interval", minutes=5)])).to_dict()

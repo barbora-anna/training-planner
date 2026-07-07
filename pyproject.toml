@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
     "garminconnect[workout]",
+    "garmin-fit-sdk",
     "python-dotenv",
 ]
 
@@ -11,6 +12,7 @@ dependencies = [
 plan = "training_planner.cli.plan:main"
 workouts = "training_planner.cli.workouts:main"
 garmin-login = "training_planner.cli.login:main"
+reset = "training_planner.cli.reset:main"
 
 [build-system]
 requires = ["hatchling"]

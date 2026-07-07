@@ -17,6 +17,7 @@ zoneNumber serialize through `to_dict()` even though they aren't declared fields
 from __future__ import annotations
 
 from garminconnect.workout import (
+    BaseWorkout,
     ConditionType,
     ExecutableStep,
     RunningWorkout,
@@ -31,11 +32,16 @@ from ..models.workout import (
     HRZoneTarget,
     PaceTarget,
     Repeat,
+    RestStep,
     Step,
+    StrengthSet,
+    StrengthStep,
+    StrengthWorkoutSpec,
     WorkoutSpec,
 )
 
 RUNNING_SPORT = {"sportTypeId": 1, "sportTypeKey": "running"}
+STRENGTH_SPORT = {"sportTypeId": 5, "sportTypeKey": "strength_training"}
 
 # step kind -> (stepTypeId, displayOrder)
 _STEP_TYPES = {
@@ -120,40 +126,137 @@ def _step_seconds(step: Step) -> float:
     return (step.km * 1000.0) / _FALLBACK_SPEED_MPS      # distance step, no pace: rough guess
 
 
-def _estimate_seconds(elements: list) -> int:
+# Shared spec-walking skeleton — running and strength differ only in the group class
+# (Repeat / StrengthSet, both `.times` + `.steps`) and the per-step builder / duration fn,
+# so the ordering bookkeeping and rollup live here once.
+
+def _assemble(elements: list, group_cls, build_child) -> list:
+    """Walk spec elements into ordered Garmin steps, numbering repeat groups + children."""
+    steps: list = []
+    order = 1
+    for el in elements:
+        if isinstance(el, group_cls):
+            group_order = order  # the repeat group is numbered before its children
+            order += 1
+            children = []
+            for s in el.steps:
+                children.append(build_child(s, order))
+                order += 1
+            steps.append(create_repeat_group(el.times, children, group_order))
+        else:
+            steps.append(build_child(el, order))
+            order += 1
+    return steps
+
+
+def _estimate(elements: list, group_cls, step_seconds) -> int:
     total = 0.0
     for el in elements:
-        if isinstance(el, Repeat):
-            total += el.times * sum(_step_seconds(s) for s in el.steps)
+        if isinstance(el, group_cls):
+            total += el.times * sum(step_seconds(s) for s in el.steps)
         else:
-            total += _step_seconds(el)
+            total += step_seconds(el)
     return int(total)
 
 
 def spec_to_garmin(spec: WorkoutSpec) -> RunningWorkout:
     """Translate a validated WorkoutSpec into a library RunningWorkout."""
-    workout_steps: list = []
-    order = 1
-    for el in spec.steps:
-        if isinstance(el, Repeat):
-            group_order = order  # the repeat group is numbered before its children
-            order += 1
-            children = []
-            for s in el.steps:
-                children.append(_exec_step(s, order))
-                order += 1
-            workout_steps.append(create_repeat_group(el.times, children, group_order))
-        else:
-            workout_steps.append(_exec_step(el, order))
-            order += 1
-
+    workout_steps = _assemble(spec.steps, Repeat, _exec_step)
     segment = WorkoutSegment(segmentOrder=1, sportType=RUNNING_SPORT, workoutSteps=workout_steps)
     kwargs = {
         "workoutName": spec.name,
         "sportType": RUNNING_SPORT,
-        "estimatedDurationInSecs": _estimate_seconds(spec.steps),
+        "estimatedDurationInSecs": _estimate(spec.steps, Repeat, _step_seconds),
         "workoutSegments": [segment],
     }
     if spec.description:
         kwargs["description"] = spec.description
     return RunningWorkout(**kwargs)
+
+
+# --------------------------------------------------------------------------- #
+# Strength — there is no library StrengthWorkout class, so we assemble the same
+# BaseWorkout structure and inject Garmin's strength fields (category / exerciseName /
+# weightValue + weightUnit) via ExecutableStep's `extra: "allow"`, exactly as the running
+# path injects pace/HR targets. Weight travels as a value+unit pair (kg + _KG_UNIT) —
+# Garmin drops a bare weightValue on save. Result is a dict for upload_workout().
+# --------------------------------------------------------------------------- #
+
+_NO_TARGET_FIELDS = {"targetType": _NO_TARGET}
+_SECONDS_PER_REP = 3.0            # rough, for the display duration estimate only
+
+# Garmin's weight unit descriptor. `weightValue` is the display value in this unit
+# (kilograms); `factor` is how Garmin reaches its internal grams (kg × 1000). Without
+# this object Garmin silently drops `weightValue` on save — the weight must travel as a
+# value+unit pair, exactly like a pace/HR target carries its targetType.
+_KG_UNIT = {"unitId": 8, "unitKey": "kilogram", "factor": 1000.0}
+
+
+def _reps_condition(reps: int) -> tuple[dict, float]:
+    end = {"conditionTypeId": ConditionType.REPS, "conditionTypeKey": "reps",
+           "displayOrder": 10, "displayable": True}
+    return end, float(reps)
+
+
+def _time_condition(seconds: float) -> tuple[dict, float]:
+    end = {"conditionTypeId": ConditionType.TIME, "conditionTypeKey": "time",
+           "displayOrder": 2, "displayable": True}
+    return end, float(seconds)
+
+
+def _strength_exec_step(step: StrengthStep, order: int) -> ExecutableStep:
+    end, value = (_reps_condition(step.reps) if step.reps is not None
+                  else _time_condition(step.seconds))
+    fields = {"category": step.exercise.category, **_NO_TARGET_FIELDS}
+    if step.exercise.name is not None:
+        fields["exerciseName"] = step.exercise.name
+    if step.weight_kg is not None:
+        fields["weightValue"] = float(step.weight_kg)            # kg; _KG_UNIT.factor -> grams
+        fields["weightUnit"] = _KG_UNIT
+    return ExecutableStep(
+        stepOrder=order,
+        stepType={"stepTypeId": StepType.MAIN, "stepTypeKey": "main", "displayOrder": 8},
+        endCondition=end,
+        endConditionValue=value,
+        **fields,
+    )
+
+
+def _rest_exec_step(step: RestStep, order: int) -> ExecutableStep:
+    end, value = _time_condition(step.seconds)
+    return ExecutableStep(
+        stepOrder=order,
+        stepType={"stepTypeId": StepType.REST, "stepTypeKey": "rest", "displayOrder": 5},
+        endCondition=end,
+        endConditionValue=value,
+        **_NO_TARGET_FIELDS,
+    )
+
+
+def _strength_child(step, order: int) -> ExecutableStep:
+    return (_rest_exec_step(step, order) if isinstance(step, RestStep)
+            else _strength_exec_step(step, order))
+
+
+def _strength_step_seconds(step) -> float:
+    if isinstance(step, RestStep):
+        return step.seconds
+    if step.seconds is not None:
+        return step.seconds
+    return step.reps * _SECONDS_PER_REP
+
+
+def strength_spec_to_garmin(spec: StrengthWorkoutSpec) -> dict:
+    """Translate a validated StrengthWorkoutSpec into the dict `upload_workout` wants."""
+    workout_steps = _assemble(spec.steps, StrengthSet, _strength_child)
+    segment = WorkoutSegment(segmentOrder=1, sportType=STRENGTH_SPORT,
+                             workoutSteps=workout_steps)
+    kwargs = {
+        "workoutName": spec.name,
+        "sportType": STRENGTH_SPORT,
+        "estimatedDurationInSecs": _estimate(spec.steps, StrengthSet, _strength_step_seconds),
+        "workoutSegments": [segment],
+    }
+    if spec.description:
+        kwargs["description"] = spec.description
+    return BaseWorkout(**kwargs).to_dict()

@@ -5,9 +5,11 @@ import datetime
 import pytest
 from pydantic import ValidationError
 
+from training_planner.models.exercises import Exercise
 from training_planner.models.plan import (
     Block,
     ExercisePrescription,
+    Milestone,
     RunContent,
     StrengthContent,
     Target,
@@ -15,12 +17,26 @@ from training_planner.models.plan import (
     run_session,
     strength_session,
 )
-from training_planner.models.workout import Step, WorkoutSpec, hr_zone
+from training_planner.models.workout import (
+    Step,
+    StrengthStep,
+    StrengthWorkoutSpec,
+    WorkoutSpec,
+    hr_zone,
+)
 
 
 def _run(date="2026-08-01", title="easy", intent="easy", **kw):
     w = WorkoutSpec(name="w", steps=[Step("interval", minutes=30, target=hr_zone(2))])
     return run_session(date=date, title=title, intent=intent, workout=w, **kw)
+
+
+def _strength(**kw):
+    return strength_session(
+        date="2026-08-02", title="legs", intent="strength",
+        focus=["lower"], exercises=[ExercisePrescription(name="squat", sets=3, reps="5")],
+        **kw,
+    )
 
 
 class TestSessionFactories:
@@ -30,12 +46,18 @@ class TestSessionFactories:
         assert isinstance(s.content, RunContent)
 
     def test_strength_session_discipline(self):
-        s = strength_session(
-            date="2026-08-02", title="legs", intent="strength",
-            focus=["lower"], exercises=[ExercisePrescription(name="squat", sets=3, reps="5")],
-        )
+        s = _strength()
         assert s.discipline == "strength"
         assert isinstance(s.content, StrengthContent)
+
+    def test_strength_workout_is_optional_and_round_trips(self):
+        assert _strength().content.workout is None    # guidance-only by default
+        spec = StrengthWorkoutSpec(name="Lower A", steps=[
+            StrengthStep(Exercise("SQUAT", "GOBLET_SQUAT"), reps=10, weight_kg=20),
+        ])
+        content = _strength(workout=spec).content
+        loaded = StrengthContent.model_validate_json(content.model_dump_json())
+        assert loaded.workout.steps[0].exercise.name == "GOBLET_SQUAT"
 
     def test_key_flag(self):
         assert _run().key is False
@@ -84,3 +106,36 @@ class TestTarget:
     def test_performance_goal_needs_no_date(self):
         t = Target(name="sub-40 10k", kind="performance", distance_km=10)
         assert t.date is None
+
+    def test_milestones_default_empty(self):
+        assert Target(name="X").milestones == []
+
+    def test_milestone_done_state(self):
+        pending = Milestone(label="8–10 strict pull-ups")
+        hit = Milestone(label="chest-to-bar", achieved_on=datetime.date(2026, 8, 1))
+        assert pending.done is False and str(pending).startswith("○")
+        assert hit.done is True and str(hit).startswith("✓")
+
+    def test_milestones_round_trip(self):
+        t = Target(name="First muscle-up", kind="performance",
+                   milestones=[Milestone(label="8–10 strict pull-ups"),
+                               Milestone(label="chest-to-bar",
+                                         target_date=datetime.date(2026, 9, 1))])
+        loaded = Target.model_validate_json(t.model_dump_json())
+        assert [m.label for m in loaded.milestones] == ["8–10 strict pull-ups", "chest-to-bar"]
+        assert loaded.milestones[1].target_date == datetime.date(2026, 9, 1)
+
+
+class TestMilestonePreview:
+    def test_preview_lists_milestones_with_marks(self):
+        block = Block(
+            target=Target(name="First muscle-up", kind="performance",
+                          milestones=[Milestone(label="8–10 strict pull-ups",
+                                                achieved_on=datetime.date(2026, 8, 1)),
+                                      Milestone(label="clean transition")]),
+            weeks=[Week(index=1, phase="base", sessions=[_run()])],
+        )
+        out = block.preview()
+        assert "Milestones" in out
+        assert "✓ 8–10 strict pull-ups" in out
+        assert "○ clean transition" in out
