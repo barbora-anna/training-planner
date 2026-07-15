@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from training_planner.garmin.translate import STRENGTH_SPORT, strength_spec_to_garmin
 from training_planner.models.exercises import Exercise
-from training_planner.models.workout import (
+from training_planner.models.strength import (
     RestStep,
     StrengthSet,
     StrengthStep,

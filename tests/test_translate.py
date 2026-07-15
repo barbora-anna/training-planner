@@ -5,7 +5,7 @@ from training_planner.garmin.translate import (
     _step_seconds,
     spec_to_garmin,
 )
-from training_planner.models.workout import (
+from training_planner.models.running import (
     Repeat,
     Step,
     WorkoutSpec,

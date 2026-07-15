@@ -36,7 +36,7 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
    before taper. For hilly/trail targets, add vert to long runs; ignore vert for flat goals.
 5. **Key sessions** (`key=True`): the long run and the week's main quality session. Protect
    the day before each (easy or rest, no heavy legs).
-6. **Sessions per week** — author `run` and `strength` Sessions (`run_session` /
+6. **Sessions per week** — author `running` and `strength` Sessions (`run_session` /
    `strength_session` factories):
    - Runs → a `WorkoutSpec` with targets from `profile.json` zones. **Honor
      `profile.target_preference`:** if `pace`, use `pace(...)` for *every* run target (easy

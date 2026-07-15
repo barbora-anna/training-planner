@@ -46,7 +46,9 @@ class Exercise(BaseModel, frozen=True):
     """A Garmin strength exercise: a category, optionally narrowed to a specific name.
 
     `Exercise("SQUAT")` is category-only; `Exercise("SQUAT", "GOBLET_SQUAT")` is specific.
-    Both category and name are validated against the FIT catalog.
+    Both category and name are validated against the FIT catalog, case-insensitively —
+    the FIT profile's own lowercase spelling (`goblet_squat`) is accepted and stored
+    UPPERCASE, the form the Connect API wants.
     """
     category: str
     name: str | None = None
@@ -58,6 +60,14 @@ class Exercise(BaseModel, frozen=True):
         if name is not None:
             data["name"] = name
         super().__init__(**data)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _uppercase(cls, data):
+        if isinstance(data, dict):
+            data = {k: v.upper() if k in ("category", "name") and isinstance(v, str) else v
+                    for k, v in data.items()}
+        return data
 
     @model_validator(mode="after")
     def _known_to_garmin(self) -> "Exercise":

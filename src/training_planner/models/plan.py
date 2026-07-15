@@ -7,7 +7,8 @@ straight to Garmin; strength carries guidance (mobility work is folded into stre
 Composition:  Target + Block (base->build->peak->taper) -> Week -> [Session]
 A Target is a race OR a performance goal (e.g. a 5k time goal).
 
-This module is Garmin-agnostic (like workout.py) — it only describes plans.
+This module is Garmin-agnostic (like the workout specs in running.py/strength.py) —
+it only describes plans.
 """
 
 from __future__ import annotations
@@ -17,7 +18,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, model_validator
 
-from .workout import StrengthWorkoutSpec, WorkoutSpec
+from .running import WorkoutSpec
+from .strength import StrengthWorkoutSpec
 
 __all__ = [
     "ExercisePrescription",
@@ -26,7 +28,7 @@ __all__ = [
     "Week", "Block", "Target", "Milestone",
 ]
 
-Discipline = Literal["run", "strength"]
+Discipline = Literal["running", "strength"]
 Phase = Literal["base", "build", "peak", "taper"]
 
 
@@ -53,7 +55,7 @@ class ExercisePrescription(BaseModel):
 
 
 class RunContent(BaseModel):
-    discipline: Literal["run"] = "run"
+    discipline: Literal["running"] = "running"
     workout: WorkoutSpec                     # reuses the running spec; syncs to Garmin
 
     def summary(self) -> str:
@@ -98,7 +100,7 @@ class Session(BaseModel):
         return f"{weekday}  {self.discipline:<9} {self.title}{star}"
 
 
-# Ergonomic factories (mirror pace()/hr_zone() style in workout.py).
+# Ergonomic factories (mirror pace()/hr_zone() style in running.py).
 
 def run_session(date, title: str, intent: str, workout: WorkoutSpec,
                 *, key: bool = False, notes: str | None = None) -> Session:

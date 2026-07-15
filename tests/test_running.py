@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from training_planner.models.workout import (
+from training_planner.models.running import (
     Repeat,
     Step,
     WorkoutSpec,

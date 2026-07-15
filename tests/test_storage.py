@@ -4,7 +4,7 @@ import datetime
 
 from training_planner.models.athlete import FitnessSnapshot, HealthStatus, Profile
 from training_planner.models.plan import Block, Target, Week, run_session
-from training_planner.models.workout import Step, WorkoutSpec, hr_zone
+from training_planner.models.running import Step, WorkoutSpec, hr_zone
 from training_planner.storage import (
     CampaignStore,
     HealthStatusStore,

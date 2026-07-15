@@ -36,6 +36,11 @@ class TestExerciseValidation:
         with pytest.raises(ValidationError):
             Exercise("SQUAT", "BENCH_PRESS")      # real name, wrong category
 
+    def test_normalizes_case(self):
+        # the FIT profile spells names lowercase — accept that, store Connect's UPPERCASE
+        assert Exercise("squat", "goblet_squat") == Exercise("SQUAT", "GOBLET_SQUAT")
+        assert Exercise(category="squat").category == "SQUAT"
+
 
 class TestFind:
     def test_finds_across_catalog(self):

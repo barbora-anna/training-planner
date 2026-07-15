@@ -17,13 +17,8 @@ from training_planner.models.plan import (
     run_session,
     strength_session,
 )
-from training_planner.models.workout import (
-    Step,
-    StrengthStep,
-    StrengthWorkoutSpec,
-    WorkoutSpec,
-    hr_zone,
-)
+from training_planner.models.running import Step, WorkoutSpec, hr_zone
+from training_planner.models.strength import StrengthStep, StrengthWorkoutSpec
 
 
 def _run(date="2026-08-01", title="easy", intent="easy", **kw):
@@ -42,7 +37,7 @@ def _strength(**kw):
 class TestSessionFactories:
     def test_run_session_discipline(self):
         s = _run()
-        assert s.discipline == "run"
+        assert s.discipline == "running"
         assert isinstance(s.content, RunContent)
 
     def test_strength_session_discipline(self):

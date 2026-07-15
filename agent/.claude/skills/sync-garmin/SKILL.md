@@ -33,12 +33,14 @@ via the `training-planner` package.
 - `src/training_planner/garmin/client.py` — `get_client()` **resumes** the cached session
   (never prompts; raises if there's none). The user mints the token separately via
   `uv run garmin-login`.
-- `src/training_planner/models/workout.py` — the validated, athlete-facing specs the agent builds:
-  running (`WorkoutSpec`, `Step`, `Repeat`, `pace()`, `hr_zone()`, `hr_range()`) and
-  strength (`StrengthWorkoutSpec`, `StrengthStep`, `RestStep`, `StrengthSet`).
+- `src/training_planner/models/running.py` + `models/strength.py` — the validated,
+  athlete-facing specs the agent builds: running (`WorkoutSpec`, `Step`, `Repeat`, `pace()`,
+  `hr_zone()`, `hr_range()`) and strength (`StrengthWorkoutSpec`, `StrengthStep`, `RestStep`,
+  `StrengthSet`).
 - `src/training_planner/models/exercises.py` — the full Garmin exercise catalog (`Exercise`,
   `categories()`, `exercises_in()`, `find()`); an `Exercise` validates against it on construction.
-- `src/training_planner/garmin/translate.py` — `spec_to_garmin(spec)` (running → workout object)
+- `src/training_planner/garmin/translate/` — `to_garmin(spec)` routes on `spec.sport` (the
+  sport-agnostic entry point); underneath, `spec_to_garmin(spec)` (running → workout object)
   and `strength_spec_to_garmin(spec)` (strength → dict for `upload_workout`).
 - `src/training_planner/garmin/library.py` — `WorkoutLibrary` (list / find / create / update / delete /
   schedule / upsert) over Garmin's endpoints.
@@ -52,7 +54,7 @@ upsert. Drive it with a short `uv run python` snippet from `agent/`:
    stop and ask them to run `uv run garmin-login` / `./train` themselves — don't attempt it.
 2. **Build & dry-run** — for each session, build the spec and translate it, then print the
    translated payload to sanity-check the JSON **before** logging in. Never skip the dry-run.
-   - `run` session → `WorkoutSpec` from `content.workout` → `spec_to_garmin()` (a workout
+   - `running` session → `WorkoutSpec` from `content.workout` → `spec_to_garmin()` (a workout
      object; inspect `.to_dict()`).
    - `strength` session **with a structured `content.workout`** → `StrengthWorkoutSpec` →
      `strength_spec_to_garmin()` (already a dict; inspect it directly). Strength sessions
@@ -64,7 +66,7 @@ upsert. Drive it with a short `uv run python` snippet from `agent/`:
 
 ```python
 # running
-from training_planner.models.workout import WorkoutSpec, Step, Repeat, pace, hr_zone
+from training_planner.models.running import WorkoutSpec, Step, Repeat, pace, hr_zone
 from training_planner.garmin.translate import spec_to_garmin
 from training_planner.garmin.library import WorkoutLibrary
 
@@ -74,7 +76,7 @@ print(workout.to_dict())                      # dry-run: inspect before uploadin
 # lib = WorkoutLibrary.connect(); lib.upsert(workout); lib.schedule(id, "2026-…")
 
 # strength
-from training_planner.models.workout import StrengthWorkoutSpec, StrengthStep, RestStep, StrengthSet
+from training_planner.models.strength import StrengthWorkoutSpec, StrengthStep, RestStep, StrengthSet
 from training_planner.models.exercises import Exercise, find      # find("squat") to discover names
 from training_planner.garmin.translate import strength_spec_to_garmin
 
