@@ -62,7 +62,7 @@ src/training_planner/     the installable package (the Coding Agent maintains th
   models/                   domain contracts: workout · plan · athlete
   storage.py                file-backed repositories (swappable behind one interface)
   garmin/                   client (auth) · translate (spec → Garmin) · library (push / schedule)
-  cli/                      console scripts: plan · workouts · garmin-login
+  cli/                      console scripts: plan · workouts · garmin-login · reset
 ```
 
 Data flows in one direction: **`models` (contracts) → `storage` (persistence) / `garmin`

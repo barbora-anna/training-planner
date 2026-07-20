@@ -1,8 +1,5 @@
-"""Layer 2 — translate a validated WorkoutSpec into the garminconnect library's
-RunningWorkout, ready for `client.upload_running_workout(...)`.
-
-The spec (models/workout.py) is athlete-facing and Garmin-agnostic; this module owns all
-Garmin encoding. The library's models give a second, structural validation pass.
+"""Translate a running WorkoutSpec into the garminconnect library's RunningWorkout, ready
+for `client.upload_running_workout(...)`.
 
 Target encoding (verified against Garmin's schema):
 - pace     -> targetType pace.zone (id 6); targetValueOne/Two = speed in m/s
@@ -23,10 +20,9 @@ from garminconnect.workout import (
     StepType,
     TargetType,
     WorkoutSegment,
-    create_repeat_group,
 )
 
-from ..models.workout import (
+from ...models.running import (
     HRRangeTarget,
     HRZoneTarget,
     PaceTarget,
@@ -34,6 +30,9 @@ from ..models.workout import (
     Step,
     WorkoutSpec,
 )
+from .base import _assemble, _estimate
+
+__all__ = ["RUNNING_SPORT", "spec_to_garmin"]
 
 RUNNING_SPORT = {"sportTypeId": 1, "sportTypeKey": "running"}
 
@@ -71,7 +70,6 @@ def _speed_mps(sec_per_km: int) -> float:
 
 
 def _target_fields(target) -> dict:
-    """Return the Garmin step fields for a spec target (targetType + values/zone)."""
     if target is None:
         return {"targetType": _NO_TARGET}
     if isinstance(target, PaceTarget):
@@ -113,45 +111,21 @@ def _exec_step(step: Step, order: int) -> ExecutableStep:
 def _step_seconds(step: Step) -> float:
     """Estimated duration of a step, in seconds (feeds the workout's display estimate)."""
     if step.minutes is not None:
-        return step.minutes * 60.0                       # time step: exact
-    if isinstance(step.target, PaceTarget):              # distance step w/ pace: derive it
+        return step.minutes * 60.0
+    if isinstance(step.target, PaceTarget):
         avg_sec_per_km = (step.target.slow_sec_per_km + step.target.fast_sec_per_km) / 2
         return step.km * avg_sec_per_km
-    return (step.km * 1000.0) / _FALLBACK_SPEED_MPS      # distance step, no pace: rough guess
-
-
-def _estimate_seconds(elements: list) -> int:
-    total = 0.0
-    for el in elements:
-        if isinstance(el, Repeat):
-            total += el.times * sum(_step_seconds(s) for s in el.steps)
-        else:
-            total += _step_seconds(el)
-    return int(total)
+    return (step.km * 1000.0) / _FALLBACK_SPEED_MPS
 
 
 def spec_to_garmin(spec: WorkoutSpec) -> RunningWorkout:
-    """Translate a validated WorkoutSpec into a library RunningWorkout."""
-    workout_steps: list = []
-    order = 1
-    for el in spec.steps:
-        if isinstance(el, Repeat):
-            group_order = order  # the repeat group is numbered before its children
-            order += 1
-            children = []
-            for s in el.steps:
-                children.append(_exec_step(s, order))
-                order += 1
-            workout_steps.append(create_repeat_group(el.times, children, group_order))
-        else:
-            workout_steps.append(_exec_step(el, order))
-            order += 1
-
+    """Translate a running spec into a library RunningWorkout."""
+    workout_steps = _assemble(spec.steps, Repeat, _exec_step)
     segment = WorkoutSegment(segmentOrder=1, sportType=RUNNING_SPORT, workoutSteps=workout_steps)
     kwargs = {
         "workoutName": spec.name,
         "sportType": RUNNING_SPORT,
-        "estimatedDurationInSecs": _estimate_seconds(spec.steps),
+        "estimatedDurationInSecs": _estimate(spec.steps, Repeat, _step_seconds),
         "workoutSegments": [segment],
     }
     if spec.description:

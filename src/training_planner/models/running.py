@@ -1,24 +1,7 @@
-"""Validated, library-independent workout spec — Layer 1 of the two-layer design.
+"""Running workout spec — the athlete-facing description of a run, validated here before
+any translation to Garmin's schema (that's `garmin/translate/running.py`).
 
-These are athlete-friendly pydantic models the agent uses to *describe* a workout.
-Everything is validated here, BEFORE translation to Garmin's schema (Layer 2 lives in
-`garmin/translate.py`, `spec_to_garmin`). This module knows nothing about Garmin.
-
-A step carries at most ONE target — a pace range, an HR zone, or a custom HR range —
-never several at once (it's a single `target` field).
-
-Example:
-    WorkoutSpec(
-        name="Threshold 5x4",
-        steps=[
-            Step("warmup", minutes=10, target=hr_zone(2)),
-            Repeat(5, [
-                Step("interval", minutes=4, target=pace("5:11", "5:32")),
-                Step("recovery", minutes=1.5),
-            ]),
-            Step("cooldown", minutes=10, target=hr_zone(1)),
-        ],
-    )
+A step carries at most ONE target — a pace range, an HR zone, or a custom HR range.
 """
 
 from __future__ import annotations
@@ -28,15 +11,13 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, model_validator
 
+from .base import RepeatBase, WorkoutSpecBase
+
 __all__ = [
     "PaceTarget", "HRZoneTarget", "HRRangeTarget",
     "pace", "hr_zone", "hr_range",
     "Step", "Repeat", "WorkoutSpec",
 ]
-
-# --------------------------------------------------------------------------- #
-# Pace helpers (min:sec per km <-> seconds per km)
-# --------------------------------------------------------------------------- #
 
 _PACE_RE = re.compile(r"^\s*(\d{1,2}):([0-5]\d)\s*$")
 
@@ -55,10 +36,6 @@ def _parse_pace(text: str) -> int:
 def _format_pace(sec_per_km: int) -> str:
     return f"{sec_per_km // 60}:{sec_per_km % 60:02d}"
 
-
-# --------------------------------------------------------------------------- #
-# Targets — each step may carry exactly one (or none)
-# --------------------------------------------------------------------------- #
 
 class PaceTarget(BaseModel):
     """A pace band. `fast` is the quicker bound (fewer sec/km) than `slow`."""
@@ -86,7 +63,7 @@ class HRZoneTarget(BaseModel):
 
 
 class HRRangeTarget(BaseModel):
-    """A custom heart-rate band in bpm."""
+    """A custom heart-rate band, in bpm."""
     type: Literal["hr_range"] = "hr_range"
     low_bpm: int = Field(ge=50, le=240)
     high_bpm: int = Field(ge=50, le=240)
@@ -106,8 +83,6 @@ Target = Annotated[
     Field(discriminator="type"),
 ]
 
-# Friendly factories — what the agent actually calls.
-
 def pace(a: str, b: str) -> PaceTarget:
     """pace('5:11', '5:32') — order-agnostic; faster bound is sorted first."""
     fast, slow = sorted((_parse_pace(a), _parse_pace(b)))
@@ -121,10 +96,6 @@ def hr_zone(zone: int) -> HRZoneTarget:
 def hr_range(low: int, high: int) -> HRRangeTarget:
     return HRRangeTarget(low_bpm=low, high_bpm=high)
 
-
-# --------------------------------------------------------------------------- #
-# Steps & structure
-# --------------------------------------------------------------------------- #
 
 StepKind = Literal["warmup", "interval", "recovery", "cooldown", "rest"]
 
@@ -154,36 +125,13 @@ class Step(BaseModel):
         return f"{self.kind} {dur}{tgt}"
 
 
-class Repeat(BaseModel):
-    """A repeat group, e.g. Repeat(5, [interval, recovery])."""
-    times: int = Field(ge=2)
-    steps: list[Step] = Field(min_length=1)
-
-    def __init__(self, times: int | None = None, steps: list[Step] | None = None, /, **data):
-        if times is not None:
-            data["times"] = times
-        if steps is not None:
-            data["steps"] = steps
-        super().__init__(**data)
-
-    def __str__(self) -> str:
-        inner = " + ".join(str(s) for s in self.steps)
-        return f"{self.times}x ({inner})"
+class Repeat(RepeatBase[Step]):
+    """A repeat group of run steps — e.g. Repeat(5, [interval, recovery])."""
 
 
 Element = Union[Step, Repeat]
 
 
-class WorkoutSpec(BaseModel):
-    """A complete, validated workout description."""
-    name: str = Field(min_length=1)
+class WorkoutSpec(WorkoutSpecBase[Element]):
+    """A complete, validated running workout."""
     sport: Literal["running"] = "running"
-    description: str | None = None
-    steps: list[Element] = Field(min_length=1)
-
-    def preview(self) -> str:
-        """A readable rendering for review before syncing."""
-        lines = [f"{self.name}  ({self.sport})"]
-        for i, el in enumerate(self.steps, 1):
-            lines.append(f"  {i}. {el}")
-        return "\n".join(lines)

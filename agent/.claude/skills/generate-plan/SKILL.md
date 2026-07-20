@@ -15,7 +15,12 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
 
 - `campaigns/<slug>/target.json` — what we're training for (run `plan_cli.py show <slug>`
   won't work before a block exists; just read the file).
-- `athlete/profile.json` — zones/thresholds → **calibrates paces & HR** in every workout.
+- `athlete/profile.json` — zones/thresholds → **calibrates paces & HR** in every run; and
+  `sex` / `height_cm` / `weight_kg` / `training_status` / `strength_baseline` → shapes
+  **movement selection and difficulty** (a small untrained beginner starts with simple
+  bilateral movements and slow steps; a strong, experienced athlete gets advanced variants).
+  These fields calibrate *what* to prescribe, not a kg number — see the strength step below
+  for when (if ever) a weight gets attached.
 - latest `athlete/fitness-snapshots/<date>.json` — current weekly volume, longest run,
   trend → **sets starting load & progression**.
 - `athlete/health-status.json` **if it exists** — injuries/limitations. Absent = healthy.
@@ -32,7 +37,7 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
    before taper. For hilly/trail targets, add vert to long runs; ignore vert for flat goals.
 5. **Key sessions** (`key=True`): the long run and the week's main quality session. Protect
    the day before each (easy or rest, no heavy legs).
-6. **Sessions per week** — author `run` and `strength` Sessions (`run_session` /
+6. **Sessions per week** — author `running` and `strength` Sessions (`run_session` /
    `strength_session` factories):
    - Runs → a `WorkoutSpec` with targets from `profile.json` zones. **Honor
      `profile.target_preference`:** if `pace`, use `pace(...)` for *every* run target (easy
@@ -40,7 +45,25 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
      `hr_range(...)`. If it isn't recorded yet, **ask the athlete before prescribing** — don't
      default silently. Easy stays easy; quality sharpens per phase.
    - Strength → from principles, supporting the goal (unilateral legs, posterior chain,
-     core; eccentric/descending work for hilly targets). 1–2×/week, reduced in taper.
+     core; eccentric/descending work for hilly targets), **scaled to `training_status` +
+     `strength_baseline`**: untrained/novice → bodyweight or light loads, simple bilateral
+     movements, small week-to-week steps; intermediate/advanced → heavier work anchored to
+     their known lifts, advanced variants. 1–2×/week, reduced in taper. Write
+     the `focus` + `exercises` guidance for `block.md` **always**. If the session should sync
+     to the watch, also attach a structured `StrengthWorkoutSpec` (`content.workout`) — pick
+     real exercises from the catalog (`Exercise(category[, name])`; use
+     `exercises.find("squat")` to discover valid names), sets via `StrengthSet`, `RestStep`
+     between them. No `workout` = guidance-only (nothing pushed). For a **strength-primary
+     goal**, the block centers on these sessions rather than run periodization.
+     - **Default: leave `weight_kg` unset (bodyweight/self-selected) on every exercise.**
+       Don't infer or calibrate a kg number from `strength_baseline` or anything else —
+       write `focus`/`exercises` as "your working weight" / bodyweight and skip `weight_kg`
+       in the synced spec. **Mention the option, don't assume it:** when building a
+       strength-relevant plan, tell the athlete they *could* have specific weights
+       prescribed instead — that's how progressive-overload tracking works — but it's
+       optional and their call. Only attach a real `weight_kg` if the athlete says in this
+       conversation that they want it (for that session/block; ask again next time rather
+       than assuming it still holds). Never invent a number they haven't given you.
 7. **If `health-status` present** — respect `limitations`, stage return-to-run, add deloads,
    swap high-impact work. Injury safety outranks the schedule.
 8. **Taper** — cut volume ~40–60% over the final weeks, keep some intensity, drop strength load.
@@ -51,12 +74,14 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
    Set `generated_from` to the snapshot file used (provenance).
 2. Save + validate: `uv run plan save-block <slug> <draft.json>`.
    Fix and re-run on any validation error.
-3. Show `block.md` and walk the athlete through the block. Suggest `/sync-garmin` for the
-   run sessions once they approve.
+3. Show `block.md` and walk the athlete through the block. Suggest `/sync-garmin` once they
+   approve — it pushes the run sessions and any strength sessions that carry a structured
+   `content.workout`.
 
 ## Notes
 
 - **Discuss before committing.** Talk through the shape with the athlete; don't dump a
   finished block without a look.
 - This is guidance-driven periodization, not a rigid template — adapt to the person.
-- Run sessions sync to Garmin; strength is guidance in `block.md` (not pushed).
+- Both run and strength sessions can sync to Garmin. Strength always gets `focus`/`exercises`
+  guidance in `block.md`; attach a structured `content.workout` when it should reach the watch.
