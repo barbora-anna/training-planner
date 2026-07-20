@@ -16,10 +16,11 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
 - `campaigns/<slug>/target.json` — what we're training for (run `plan_cli.py show <slug>`
   won't work before a block exists; just read the file).
 - `athlete/profile.json` — zones/thresholds → **calibrates paces & HR** in every run; and
-  `sex` / `height_cm` / `weight_kg` / `training_status` / `strength_baseline` → **calibrate
-  strength load & progression**. A small untrained beginner starts bodyweight/light with
-  simple movements and slow steps; a strong, experienced athlete gets heavier loads and
-  advanced variants. Never prescribe the same weights blind — anchor them to this.
+  `sex` / `height_cm` / `weight_kg` / `training_status` / `strength_baseline` → shapes
+  **movement selection and difficulty** (a small untrained beginner starts with simple
+  bilateral movements and slow steps; a strong, experienced athlete gets advanced variants).
+  These fields calibrate *what* to prescribe, not a kg number — see the strength step below
+  for when (if ever) a weight gets attached.
 - latest `athlete/fitness-snapshots/<date>.json` — current weekly volume, longest run,
   trend → **sets starting load & progression**.
 - `athlete/health-status.json` **if it exists** — injuries/limitations. Absent = healthy.
@@ -54,6 +55,15 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
      `exercises.find("squat")` to discover valid names), sets via `StrengthSet`, `RestStep`
      between them. No `workout` = guidance-only (nothing pushed). For a **strength-primary
      goal**, the block centers on these sessions rather than run periodization.
+     - **Default: leave `weight_kg` unset (bodyweight/self-selected) on every exercise.**
+       Don't infer or calibrate a kg number from `strength_baseline` or anything else —
+       write `focus`/`exercises` as "your working weight" / bodyweight and skip `weight_kg`
+       in the synced spec. **Mention the option, don't assume it:** when building a
+       strength-relevant plan, tell the athlete they *could* have specific weights
+       prescribed instead — that's how progressive-overload tracking works — but it's
+       optional and their call. Only attach a real `weight_kg` if the athlete says in this
+       conversation that they want it (for that session/block; ask again next time rather
+       than assuming it still holds). Never invent a number they haven't given you.
 7. **If `health-status` present** — respect `limitations`, stage return-to-run, add deloads,
    swap high-impact work. Injury safety outranks the schedule.
 8. **Taper** — cut volume ~40–60% over the final weeks, keep some intensity, drop strength load.
