@@ -61,6 +61,10 @@ class RunContent(BaseModel):
     def summary(self) -> str:
         return self.workout.name
 
+    def detail_lines(self) -> list[str]:
+        """The structured steps that actually get synced — same detail as Garmin sees."""
+        return self.workout.numbered_lines()
+
 
 class StrengthContent(BaseModel):
     discipline: Literal["strength"] = "strength"
@@ -70,6 +74,17 @@ class StrengthContent(BaseModel):
 
     def summary(self) -> str:
         return "strength: " + ", ".join(self.focus)
+
+    def detail_lines(self) -> list[str]:
+        """Prefer the structured workout (exact sets/reps/weight, what Garmin gets); fall
+        back to the free-form prescriptions when there's no structured workout to sync.
+        """
+        lines = [f"focus: {', '.join(self.focus)}"]
+        if self.workout is not None:
+            lines += self.workout.numbered_lines()
+        else:
+            lines += [f"- {ex}" for ex in self.exercises]
+        return lines
 
 
 Content = Annotated[
@@ -98,6 +113,14 @@ class Session(BaseModel):
         star = " ★" if self.key else ""
         weekday = self.date.strftime("%a")
         return f"{weekday}  {self.discipline:<9} {self.title}{star}"
+
+    def preview_lines(self, indent: str = "  ") -> list[str]:
+        """The session header plus indented detail lines (steps/exercises), at `indent`.
+
+        All indentation is composed here (not split with the caller) so there's one place
+        that decides how a session block looks, however deep it's nested.
+        """
+        return [f"{indent}{self}"] + [f"{indent}    {line}" for line in self.content.detail_lines()]
 
 
 # Ergonomic factories (mirror pace()/hr_zone() style in running.py).
@@ -195,5 +218,5 @@ class Block(BaseModel):
             vol = f" · {w.target_km:g} km" if w.target_km else ""
             lines.append(f"\nWeek {w.index} · {w.phase}{vol}")
             for s in w.ordered():
-                lines.append(f"  {s}")
+                lines.extend(s.preview_lines())
         return "\n".join(lines)

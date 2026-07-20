@@ -93,6 +93,10 @@ class TestBlock:
         head = self._block([1], kind="race", distance_km=10).preview().splitlines()[0]
         assert head.endswith("(10 km)")
 
+    def test_preview_includes_session_detail(self):
+        # regression: block.md should render step detail, not just the session title
+        assert "interval 30 min" in self._block([1], kind="race", distance_km=10).preview()
+
 
 class TestTarget:
     def test_defaults_to_race(self):
@@ -119,6 +123,30 @@ class TestTarget:
         loaded = Target.model_validate_json(t.model_dump_json())
         assert [m.label for m in loaded.milestones] == ["8–10 strict pull-ups", "chest-to-bar"]
         assert loaded.milestones[1].target_date == datetime.date(2026, 9, 1)
+
+
+class TestSessionPreview:
+    def test_run_detail_shows_steps(self):
+        s = _run()
+        assert "interval 30 min" in "\n".join(s.preview_lines())
+
+    def test_strength_detail_prefers_structured_workout(self):
+        spec = StrengthWorkoutSpec(name="Lower A", steps=[
+            StrengthStep(Exercise("SQUAT", "GOBLET_SQUAT"), reps=10, weight_kg=20),
+        ])
+        s = _strength(workout=spec)
+        detail = "\n".join(s.preview_lines())
+        assert "GOBLET_SQUAT" in detail and "20 kg" in detail
+        assert "squat  3×5" not in detail    # structured wins over the free-form prescription
+
+    def test_strength_detail_falls_back_to_prescriptions_without_workout(self):
+        s = _strength()
+        detail = "\n".join(s.preview_lines())
+        assert "squat  3×5" in detail
+
+    def test_strength_detail_shows_focus(self):
+        s = _strength()
+        assert "focus: lower" in "\n".join(s.preview_lines())
 
 
 class TestMilestonePreview:
