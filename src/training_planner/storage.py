@@ -144,3 +144,7 @@ class CampaignStore(JsonStore):
         if not self.base.exists():
             return []
         return sorted(p.name for p in self.base.iterdir() if p.is_dir())
+
+    def delete(self, slug: str) -> None:
+        """Remove a campaign's whole directory (target, block, history — everything)."""
+        shutil.rmtree(self._dir(slug))

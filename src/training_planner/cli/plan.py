@@ -9,6 +9,9 @@ caught before it lands, and block.md + history are written automatically.
     uv run plan save-block  <slug> <block.json>
     uv run plan show <slug>
     uv run plan list
+    uv run plan delete <slug>          # list what will go, then confirm
+    uv run plan delete <slug> --yes    # skip the prompt (non-interactive)
+    uv run plan delete <slug> --dry-run  # show what would be deleted, delete nothing
 """
 
 from __future__ import annotations
@@ -56,6 +59,30 @@ def cmd_list(args) -> None:
     print("\n".join(slugs) if slugs else "No campaigns yet.")
 
 
+def cmd_delete(args) -> None:
+    store = CampaignStore()
+    d = store._dir(args.slug)
+    if not d.exists():
+        sys.exit(f"No campaign '{args.slug}' found.")
+
+    items = sorted(d.rglob("*"))
+    files = [p for p in items if p.is_file()]
+    print(f"This will permanently delete campaigns/{args.slug}/ ({len(files)} file(s)):")
+    for p in files:
+        print(f"  {p.relative_to(store.base)}")
+
+    if args.dry_run:
+        print("\nDry run — nothing deleted.")
+        return
+
+    if not args.yes and input(f"\nType 'yes' to delete '{args.slug}': ").strip().lower() != "yes":
+        print("Aborted — nothing deleted.")
+        return
+
+    store.delete(args.slug)
+    print(f"Done — removed campaigns/{args.slug}/.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -76,6 +103,13 @@ def main() -> None:
 
     p = sub.add_parser("list", help="List campaigns.")
     p.set_defaults(func=cmd_list)
+
+    p = sub.add_parser("delete", help="Delete a campaign's whole directory (confirms first).")
+    p.add_argument("slug")
+    p.add_argument("-y", "--yes", action="store_true", help="Skip the confirmation prompt.")
+    p.add_argument("--dry-run", action="store_true",
+                    help="Show what would be deleted, delete nothing.")
+    p.set_defaults(func=cmd_delete)
 
     args = parser.parse_args()
     args.func(args)
