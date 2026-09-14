@@ -10,6 +10,10 @@ Produce a validated `Block` for a campaign: `Target + Profile + latest FitnessSn
 `campaigns/<slug>/block.json` (+ `block.md` for review).
 
 Models are in `src/training_planner/models/plan.py`; persistence via `uv run plan`.
+Strength prescriptions draw on `agent/knowledge/strength-science.md` — the exercise-science
+reasoning (progressive overload, periodization, rep ranges, autoregulation, recovery,
+runner-specific selection) behind the rules below. Read it before authoring strength
+sessions; this skill file stays procedural.
 
 ## Inputs (read first)
 
@@ -44,15 +48,20 @@ Models are in `src/training_planner/models/plan.py`; persistence via `uv run pla
      from the Z2 pace band, quality at threshold/VO2 paces); if `hr`, use `hr_zone(...)` /
      `hr_range(...)`. If it isn't recorded yet, **ask the athlete before prescribing** — don't
      default silently. Easy stays easy; quality sharpens per phase.
-   - Strength → from principles, supporting the goal (unilateral legs, posterior chain,
-     core; eccentric/descending work for hilly targets), **scaled to `training_status` +
-     `strength_baseline`**: untrained/novice → bodyweight or light loads, simple bilateral
-     movements, small week-to-week steps; intermediate/advanced → heavier work anchored to
-     their known lifts, advanced variants. 1–2×/week, reduced in taper. Write
-     the `focus` + `exercises` guidance for `block.md` **always**. If the session should sync
-     to the watch, also attach a structured `StrengthWorkoutSpec` (`content.workout`) — pick
-     real exercises from the catalog (`Exercise(category[, name])`; use
-     `exercises.find("squat")` to discover valid names), sets via `StrengthSet`, `RestStep`
+   - Strength → runner-supporting selection per `strength-science.md` (posterior chain,
+     unilateral work, eccentric/descending emphasis for hilly targets, core/anti-rotation;
+     plyometrics only for intermediate/advanced and healthy), **scaled to `training_status` +
+     `strength_baseline`**: untrained/novice → bodyweight, bilateral before unilateral,
+     higher reps (12–15+) at low RPE, linear progression; intermediate/advanced → unilateral
+     and eccentric work, the 6–12 hypertrophy band, undulating periodization if they've
+     plateaued. Match volume/intensity to the block's current phase (base = movement quality
+     and moderate reps, build = rising difficulty, peak = volume down/intensity held, taper =
+     hard cut). Since `weight_kg` defaults unset, **express intensity as reps + RPE/RIR** in
+     the guidance prose (e.g. "3×10, RPE 7") so effort is self-regulated day to day. 1–2×/week,
+     reduced in taper. Write the `focus` + `exercises` guidance for `block.md` **always**. If
+     the session should sync to the watch, also attach a structured `StrengthWorkoutSpec`
+     (`content.workout`) — pick real exercises from the catalog (`Exercise(category[, name])`;
+     use `exercises.find("squat")` to discover valid names), sets via `StrengthSet`, `RestStep`
      between them. No `workout` = guidance-only (nothing pushed). For a **strength-primary
      goal**, the block centers on these sessions rather than run periodization.
      - **Default: leave `weight_kg` unset (bodyweight/self-selected) on every exercise.**
