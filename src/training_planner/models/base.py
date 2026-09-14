@@ -39,9 +39,15 @@ class WorkoutSpecBase(BaseModel, Generic[E]):
     description: str | None = None
     steps: list[E] = Field(min_length=1)
 
+    def numbered_lines(self) -> list[str]:
+        """`steps` rendered as `"1. ..."` lines — the shared building block for previews,
+        so every caller (this class's own `preview()`, and anyone else previewing the same
+        steps elsewhere) numbers them the same way.
+        """
+        return [f"{i}. {el}" for i, el in enumerate(self.steps, 1)]
+
     def preview(self) -> str:
         """Render the workout for review before syncing."""
         lines = [f"{self.name}  ({self.sport})"]
-        for i, el in enumerate(self.steps, 1):
-            lines.append(f"  {i}. {el}")
+        lines.extend(f"  {line}" for line in self.numbered_lines())
         return "\n".join(lines)
