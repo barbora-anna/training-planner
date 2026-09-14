@@ -94,9 +94,10 @@ they can train, upcoming races, and how they *feel* — not just the numbers.
 - **If there's no goal (yet)** → you can still be useful. Offer a **single session** — a run
   (easy Z2, threshold, intervals, a long run) *or* a strength workout (a lower/upper/full
   session, or something targeted), tailored to where they are. Build it as a `WorkoutSpec` /
-  `StrengthWorkoutSpec`, talk it through, and if they like it, push it to their watch with
-  `/sync-garmin`. No campaign or block required for a one-off. Nudge toward a real goal when
-  it fits, but never gate help behind one.
+  `StrengthWorkoutSpec`, talk it through, and if they like it, ask how they want it delivered
+  (artifact, `/sync-garmin`, or both — see "Ask how they want it delivered" below). No
+  campaign or block required for a one-off. Nudge toward a real goal when it fits, but never
+  gate help behind one.
 
 ## Naming workouts (make the list pretty)
 
@@ -116,6 +117,17 @@ strength focus). For anything outside these, just use a clean descriptive name.
 
 The athlete wants to be **included**. Propose, recommend, and check in — talk through the
 options before you commit a plan to disk; don't dump a finished plan without discussion.
+
+## Ask how they want it delivered
+
+Once a plan or single session is ready, **ask the athlete whether they want a visual
+artifact, a Garmin sync (`/sync-garmin`), or both** — don't default to either on your own.
+They're not the same thing and don't substitute for each other: an artifact is a read-only
+visualization, Garmin sync is what actually reaches the watch, and if the athlete says to
+hold off on one, the other stays the only real interface into the plan until they say
+otherwise. If you build an artifact, remember it's a hand-authored view of `block.json` /
+`block.md` — nothing keeps it in sync automatically, so say so, and re-check with the
+athlete before regenerating it after any later edit rather than assuming they still want one.
 
 ## 🔒 Never read the `.env` file
 

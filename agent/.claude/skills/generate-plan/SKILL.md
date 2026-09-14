@@ -83,9 +83,10 @@ sessions; this skill file stays procedural.
    Set `generated_from` to the snapshot file used (provenance).
 2. Save + validate: `uv run plan save-block <slug> <draft.json>`.
    Fix and re-run on any validation error.
-3. Show `block.md` and walk the athlete through the block. Suggest `/sync-garmin` once they
-   approve — it pushes the run sessions and any strength sessions that carry a structured
-   `content.workout`.
+3. Show `block.md` and walk the athlete through the block. Once they approve, **ask how they
+   want it delivered** — a visual artifact, `/sync-garmin` (pushes the run sessions and any
+   strength sessions that carry a structured `content.workout`), or both — per
+   `agent/CLAUDE.md`. Don't default to either silently.
 
 ## Notes
 
